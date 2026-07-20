@@ -14,6 +14,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   CARGO_TERM_VERBOSE: true
+  LIBC_BUILD_VERBOSE: true
   LIBC_CI: 1
   RUSTDOCFLAGS: -Dwarnings
   RUSTFLAGS: -Dwarnings
@@ -28,10 +29,10 @@ defaults:
 jobs:
   style_check:
     name: Style check
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
       - name: Setup Rust toolchain
@@ -43,11 +44,11 @@ jobs:
     name: Clippy on ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-24.04, macos-26, windows-2025]
+        os: [ubuntu-26.04, macos-26, windows-2025]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
       - run: rustup update stable --no-self-update
@@ -73,19 +74,19 @@ jobs:
             only: '(aarch64|x86_64)' # just a spot check for beta
           - toolchain: stable
           - toolchain: 1.65.0 # msrv
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 25
     env:
       TOOLCHAIN: ${{ matrix.toolchain }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
       - name: Setup Rust toolchain
         run: ./ci/install-rust.sh
 
       - name: Install semver-checks
-        uses: taiki-e/install-action@d9be7d8cda89035c9c843f78bd44d4f72d8403d4 # v2.79.7
+        uses: taiki-e/install-action@a6b2e2dcd845ddd7f509ce4f3ed3d922b80cc5d9 # v2.84.0
         if: matrix.toolchain == 'stable'
         with:
           tool: cargo-semver-checks
@@ -107,8 +108,13 @@ jobs:
         run: |
           set -eux
           if [ "${{ matrix.toolchain }}" = "1.65.0" ]; then
-              # Remove `-Dwarnings` at the MSRV since lints may be different
-              export RUSTFLAGS=""
+              # * Remove `-Dwarnings` at the MSRV since lints may be different
+              # * Allow `improper_ctypes` since pointers to ZSTs got the warning prior
+              #   to 1.72.
+              # * Enable `unknown_lints` since we have some config not known at this
+              #   version.
+              # FIXME(msrv): update this list when possible.
+              export RUSTFLAGS="-Aimproper_ctypes -Aunknown_lints"
               # Remove `ctest` which uses the 2024 edition
               perl -i -ne 'print unless /"ctest(-test)?",/ || /"libc-test",/' Cargo.toml
           fi
@@ -131,7 +137,7 @@ jobs:
           - target: aarch64-pc-windows-msvc
             os: windows-11-arm
           - target: aarch64-unknown-linux-gnu
-            os: ubuntu-24.04-arm
+            os: ubuntu-26.04-arm
           - target: i686-pc-windows-gnu
             os: windows-2025
           - target: i686-pc-windows-msvc
@@ -142,12 +148,12 @@ jobs:
           - target: x86_64-pc-windows-msvc
             os: windows-2025
           - target: x86_64-unknown-linux-gnu
-    runs-on: ${{ matrix.os && matrix.os || 'ubuntu-24.04' }}
+    runs-on: ${{ matrix.os && matrix.os || 'ubuntu-26.04' }}
     timeout-minutes: 25
     env:
       TARGET: ${{ matrix.target }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
       - name: Setup Rust toolchain
@@ -189,39 +195,41 @@ jobs:
       max-parallel: 16
       matrix:
         include:
-          # FIXME(sparc): this takes much longer to run than any other job, put
-          # it first to make sure it gets a head start.
-          - target: sparc64-unknown-linux-gnu
           - target: aarch64-linux-android
           - target: aarch64-unknown-linux-musl
           - target: aarch64-unknown-linux-musl
-            env: { RUST_LIBC_UNSTABLE_MUSL_V1_2_3: 1 }
+            env: { TEST_MUSL_V1_2_3: 1 }
             artifact-tag: new-musl
           - target: arm-linux-androideabi
           - target: arm-unknown-linux-gnueabihf
           - target: arm-unknown-linux-musleabihf
           - target: arm-unknown-linux-musleabihf
-            env: { RUST_LIBC_UNSTABLE_MUSL_V1_2_3: 1 }
+            env: { TEST_MUSL_V1_2_3: 1 }
             artifact-tag: new-musl
           # FIXME(#4297): Disabled due to spurious failue
           # - target: i686-linux-android
           - target: i686-unknown-linux-musl
           - target: i686-unknown-linux-musl
-            env: { RUST_LIBC_UNSTABLE_MUSL_V1_2_3: 1 }
+            env: { TEST_MUSL_V1_2_3: 1 }
             artifact-tag: new-musl
           - target: loongarch64-unknown-linux-gnu
           - target: loongarch64-unknown-linux-musl
           - target: loongarch64-unknown-linux-musl
-            env: { RUST_LIBC_UNSTABLE_MUSL_V1_2_3: 1 }
+            env: { TEST_MUSL_V1_2_3: 1 }
             artifact-tag: new-musl
           - target: powerpc64-unknown-linux-gnu
+          - target: powerpc64-unknown-linux-musl
+          - target: powerpc64-unknown-linux-musl
+            env: { RUST_LIBC_UNSTABLE_MUSL_V1_2_3: 1 }
+            artifact-tag: new-musl
           - target: powerpc64le-unknown-linux-gnu
           - target: powerpc64le-unknown-linux-musl
           - target: powerpc64le-unknown-linux-musl
-            env: { RUST_LIBC_UNSTABLE_MUSL_V1_2_3: 1 }
+            env: { TEST_MUSL_V1_2_3: 1 }
             artifact-tag: new-musl
           - target: riscv64gc-unknown-linux-gnu
           - target: s390x-unknown-linux-gnu
+          - target: sparc64-unknown-linux-gnu
           - target: wasm32-unknown-emscripten
           - target: wasm32-wasip1
           - target: wasm32-wasip2
@@ -232,7 +240,7 @@ jobs:
           # - target: x86_64-unknown-linux-gnux32
           - target: x86_64-unknown-linux-musl
           - target: x86_64-unknown-linux-musl
-            env: { RUST_LIBC_UNSTABLE_MUSL_V1_2_3: 1 }
+            env: { TEST_MUSL_V1_2_3: 1 }
             artifact-tag: new-musl
           # FIXME: It seems some items in `src/unix/mod.rs` aren't defined on redox actually.
           # - target: x86_64-unknown-redox
@@ -240,12 +248,12 @@ jobs:
           # FIXME(ppc): SIGILL running tests, see
           # https://github.com/rust-lang/libc/pull/4254#issuecomment-2636288713
           # - target: powerpc-unknown-linux-gnu
-    runs-on: ${{ matrix.os && matrix.os || 'ubuntu-24.04' }}
+    runs-on: ${{ matrix.os && matrix.os || 'ubuntu-26.04' }}
     timeout-minutes: 25
     env:
       TARGET: ${{ matrix.target }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
       - name: Setup Rust toolchain
@@ -295,79 +303,72 @@ jobs:
             target: x86_64-unknown-freebsd
           - target: x86_64-pc-solaris
           - target: x86_64-unknown-netbsd
+          - target: x86_64-unknown-illumos
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
       - name: Test on FreeBSD
-        uses: vmactions/freebsd-vm@d1e65811565151536c0c894fff74f06351ed26e6 # v1.4.5
+        uses: vmactions/freebsd-vm@77ed28d336d03fe19a3f4f7266c1d2c4714dd79d # v1.5.2
         if: contains(matrix.target, 'freebsd')
         with:
           release: ${{ matrix.release }}
+          envs: CARGO_TERM_COLOR CARGO_TERM_VERBOSE RUSTDOCFLAGS RUSTFLAGS RUST_BACKTRACE
           usesh: true
           copyback: false
-          prepare: |
-            set -ex
-            pkg install -y libnghttp2 curl
-            curl https://sh.rustup.rs -sSf --output rustup.sh
-            sh rustup.sh -y --default-toolchain nightly --profile=minimal
-            . "$HOME/.cargo/env"
-            rustup target add ${{ matrix.target }}
+          prepare: ./ci/bsd-prepare.sh ${{ matrix.target }}
           run: |
             set -ex
             . "$HOME/.cargo/env"
             LIBC_CI=1 ./ci/run.sh ${{ matrix.target }}
             ./ci/run.sh ${{ matrix.target }}
 
-      - name: test on Solaris
-        uses: vmactions/solaris-vm@ccfaaeedda3686a8c26cfaee9aadd1c32c30b439 # v1.3.5
+      - name: Test on Solaris
+        uses: vmactions/solaris-vm@315163f088b66e55bbcc45928bd224d4973b2312 # v1.3.8
         if: contains(matrix.target, 'solaris')
         with:
           release: "11.4-gcc"
+          envs: CARGO_TERM_COLOR CARGO_TERM_VERBOSE RUSTDOCFLAGS RUSTFLAGS RUST_BACKTRACE
           usesh: true
           mem: 4096
           copyback: false
-          prepare: |
-            set -ex
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- \
-              --profile minimal --default-toolchain nightly -y
-            uname -a
-          run: |
-            set -ex
-            . "$HOME/.cargo/env"
-            which rustc
-            rustc -Vv
-            ./ci/run.sh ${{ matrix.target }}
+          prepare: ./ci/bsd-prepare.sh ${{ matrix.target }}
+          run: ./ci/bsd-run.sh ${{ matrix.target }}
 
       - name: Test on NetBSD
-        uses: vmactions/netbsd-vm@eb3ba840926911ccf17dc9de235335cb27a02ba0 # v1.3.8
+        uses: vmactions/netbsd-vm@0c26a4c4a5e234038862a4a53a00c905b8a107c9 # v1.4.2
         if: contains(matrix.target, 'netbsd')
         with:
           release: "10.1"
+          envs: CARGO_TERM_COLOR CARGO_TERM_VERBOSE RUSTDOCFLAGS RUSTFLAGS RUST_BACKTRACE
           usesh: true
           mem: 4096
           copyback: false
-          prepare: |
-            set -ex
-            /usr/sbin/pkg_add curl
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- \
-              --profile minimal --default-toolchain nightly -y
-          run: |
-            set -ex
-            . "$HOME/.cargo/env"
-            which rustc
-            rustc -Vv
-            ./ci/run.sh ${{ matrix.target }}
+          prepare: ./ci/bsd-prepare.sh ${{ matrix.target }}
+          run: ./ci/bsd-run.sh ${{ matrix.target }}
+
+      - name: Test on illumos
+        uses: vmactions/omnios-vm@027e3ec08fed6fb740ab5f300c2605f9de02997a # v1.3.4
+        if: contains(matrix.target, 'illumos')
+        with:
+          # Use the latest LTS
+          release: "r151054-build"
+          envs: CARGO_TERM_COLOR CARGO_TERM_VERBOSE RUSTDOCFLAGS RUSTFLAGS RUST_BACKTRACE
+          usesh: true
+          mem: 4096
+          copyback: false
+          prepare: ./ci/bsd-prepare.sh ${{ matrix.target }}
+          run: ./ci/bsd-run.sh ${{ matrix.target }}
 
   ctest_msrv:
     name: Check ctest MSRV
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     env:
       RUSTFLAGS: "" # No need to check warnings on old MSRV, clear `-Dwarnings`
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         persist-credentials: false
     - run: |
@@ -384,10 +385,10 @@ jobs:
 
   docs:
     name: Ensure docs build
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         persist-credentials: false
     - name: Install Rust
@@ -395,11 +396,26 @@ jobs:
     - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
     - run: cargo doc --workspace --no-deps
 
+  zizmor:
+    name: Zizmor (Static analysis for GitHub Actions)
+    runs-on: ubuntu-24.04
+    permissions:
+      security-events: write
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@192e21d79ab29983730a13d1382995c2307fbcaa # v0.5.7
+
   # One job that "summarizes" the success state of this pipeline. This can then be added to branch
   # protection, rather than having to add each job separately.
   success:
     name: success
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
       - style_check
       - test_tier1
@@ -409,6 +425,7 @@ jobs:
       - ctest_msrv
       - docs
       - clippy
+      - zizmor
     # GitHub branch protection is exceedingly silly and treats "jobs skipped because a dependency
     # failed" as success. So we have to do some contortions to ensure the job fails if any of its
     # dependencies fails.

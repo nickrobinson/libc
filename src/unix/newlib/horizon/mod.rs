@@ -1,6 +1,5 @@
 //! ARMv6K Nintendo 3DS C Newlib definitions
 
-use crate::off_t;
 use crate::prelude::*;
 
 pub type wchar_t = c_uint;
@@ -67,23 +66,6 @@ s! {
 
     pub struct sched_param {
         pub sched_priority: c_int,
-    }
-
-    pub struct stat {
-        pub st_dev: crate::dev_t,
-        pub st_ino: crate::ino_t,
-        pub st_mode: crate::mode_t,
-        pub st_nlink: crate::nlink_t,
-        pub st_uid: crate::uid_t,
-        pub st_gid: crate::gid_t,
-        pub st_rdev: crate::dev_t,
-        pub st_size: off_t,
-        pub st_atim: crate::timespec,
-        pub st_mtim: crate::timespec,
-        pub st_ctim: crate::timespec,
-        pub st_blksize: crate::blksize_t,
-        pub st_blocks: crate::blkcnt_t,
-        pub st_spare4: [c_long; 2usize],
     }
 }
 
@@ -152,12 +134,14 @@ pub const WNOHANG: c_int = 1;
 
 pub const POLLIN: c_int = 0x0001;
 pub const POLLPRI: c_int = 0x0002;
-pub const POLLOUT: c_int = 0x0004;
+pub const POLLOUT: c_int = 0x0008;
 pub const POLLRDNORM: c_int = 0x0040;
 pub const POLLWRNORM: c_int = POLLOUT;
 pub const POLLRDBAND: c_int = 0x0080;
 pub const POLLWRBAND: c_int = 0x0100;
+/// POLLERR behavior on 3DS+HorizonOS is unclear, and it may be unsupported.
 pub const POLLERR: c_int = 0x0008;
+/// POLLHUP behavior on 3DS+HorizonOS is unclear, and it may be unsupported.
 pub const POLLHUP: c_int = 0x0010;
 pub const POLLNVAL: c_int = 0x0020;
 
@@ -169,6 +153,9 @@ pub const EAI_SYSTEM: c_int = 11;
 pub const EAI_BADHINTS: c_int = 12;
 pub const EAI_PROTOCOL: c_int = 13;
 pub const EAI_OVERFLOW: c_int = 14;
+
+/// Constants may change across releases. See the [usage guidelines](crate#usage-guidelines)
+/// for details.
 pub const EAI_MAX: c_int = 15;
 
 pub const AF_UNIX: c_int = 1;

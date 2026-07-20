@@ -233,19 +233,23 @@ s! {
         /// This contains the bitfields `tcpi_snd_wscale` and `tcpi_rcv_wscale`.
         /// Each is 4 bits.
         pub tcpi_snd_rcv_wscale: u8,
+
         pub tcpi_rto: u32,
         pub tcpi_ato: u32,
         pub tcpi_snd_mss: u32,
         pub tcpi_rcv_mss: u32,
+
         pub tcpi_unacked: u32,
         pub tcpi_sacked: u32,
         pub tcpi_lost: u32,
         pub tcpi_retrans: u32,
         pub tcpi_fackets: u32,
+
         pub tcpi_last_data_sent: u32,
         pub tcpi_last_ack_sent: u32,
         pub tcpi_last_data_recv: u32,
         pub tcpi_last_ack_recv: u32,
+
         pub tcpi_pmtu: u32,
         pub tcpi_rcv_ssthresh: u32,
         pub tcpi_rtt: u32,
@@ -254,9 +258,55 @@ s! {
         pub tcpi_snd_cwnd: u32,
         pub tcpi_advmss: u32,
         pub tcpi_reordering: u32,
+
         pub tcpi_rcv_rtt: u32,
         pub tcpi_rcv_space: u32,
+
         pub tcpi_total_retrans: u32,
+
+        pub tcpi_pacing_rate: u64,
+        pub tcpi_max_pacing_rate: u64,
+        pub tcpi_bytes_acked: u64,
+        pub tcpi_bytes_received: u64,
+        pub tcpi_segs_out: u32,
+        pub tcpi_segs_in: u32,
+
+        pub tcpi_notsent_bytes: u32,
+        pub tcpi_min_rtt: u32,
+        pub tcpi_data_segs_in: u32,
+        pub tcpi_data_segs_out: u32,
+
+        pub tcpi_delivery_rate: u64,
+
+        pub tcpi_busy_time: u64,
+        pub tcpi_rwnd_limited: u64,
+        pub tcpi_sndbuf_limited: u64,
+
+        pub tcpi_delivered: u32,
+        pub tcpi_delivered_ce: u32,
+
+        pub tcpi_bytes_sent: u64,
+        pub tcpi_bytes_retrans: u64,
+        pub tcpi_dsack_dups: u32,
+        pub tcpi_reord_seen: u32,
+
+        pub tcpi_rcv_ooopack: u32,
+        pub tcpi_snd_wnd: u32,
+        pub tcpi_rcv_wnd: u32,
+
+        pub tcpi_rehash: u32,
+        pub tcpi_total_rto: u16,
+        pub tcpi_total_rto_recoveries: u16,
+        pub tcpi_total_rto_time: u32,
+        pub tcpi_received_ce: u32,
+        pub tcpi_delivered_e1_bytes: u32,
+        pub tcpi_delivered_e0_bytes: u32,
+        pub tcpi_delivered_ce_bytes: u32,
+        pub tcpi_received_e1_bytes: u32,
+        pub tcpi_received_e0_bytes: u32,
+        pub tcpi_received_ce_bytes: u32,
+        pub tcpi_accecn_fail_mode: u16,
+        pub tcpi_accecn_opt_seen: u16,
     }
 
     pub struct fanotify_event_info_pidfd {
@@ -546,8 +596,6 @@ pub const PRIO_PROCESS: crate::__priority_which_t = 0;
 pub const PRIO_PGRP: crate::__priority_which_t = 1;
 pub const PRIO_USER: crate::__priority_which_t = 2;
 
-pub const MS_RMT_MASK: c_ulong = 0x02800051;
-
 pub const __UT_LINESIZE: usize = 32;
 pub const __UT_NAMESIZE: usize = 32;
 pub const __UT_HOSTSIZE: usize = 256;
@@ -827,16 +875,6 @@ pub const M_ARENA_MAX: c_int = -8;
 
 pub const SOMAXCONN: c_int = 4096;
 
-// linux/mount.h
-pub const MOVE_MOUNT_F_SYMLINKS: c_uint = 0x00000001;
-pub const MOVE_MOUNT_F_AUTOMOUNTS: c_uint = 0x00000002;
-pub const MOVE_MOUNT_F_EMPTY_PATH: c_uint = 0x00000004;
-pub const MOVE_MOUNT_T_SYMLINKS: c_uint = 0x00000010;
-pub const MOVE_MOUNT_T_AUTOMOUNTS: c_uint = 0x00000020;
-pub const MOVE_MOUNT_T_EMPTY_PATH: c_uint = 0x00000040;
-pub const MOVE_MOUNT_SET_GROUP: c_uint = 0x00000100;
-pub const MOVE_MOUNT_BENEATH: c_uint = 0x00000200;
-
 // sys/timex.h
 pub const ADJ_OFFSET: c_uint = 0x0001;
 pub const ADJ_FREQUENCY: c_uint = 0x0002;
@@ -924,7 +962,6 @@ cfg_if! {
         pub const PTHREAD_STACK_MIN: size_t = 131072;
     }
 }
-pub const PTHREAD_MUTEX_ADAPTIVE_NP: c_int = 3;
 
 pub const REG_STARTEND: c_int = 4;
 
@@ -1147,6 +1184,30 @@ extern "C" {
         buf: *mut c_char,
         buflen: size_t,
         result: *mut *mut crate::group,
+    ) -> c_int;
+    pub fn getnetent_r(
+        result_buf: *mut crate::netent,
+        buf: *mut c_char,
+        buflen: size_t,
+        result: *mut *mut crate::netent,
+        h_errnop: *mut c_int,
+    ) -> c_int;
+    pub fn getnetbyname_r(
+        name: *const c_char,
+        result_buf: *mut crate::netent,
+        buf: *mut c_char,
+        buflen: size_t,
+        result: *mut *mut crate::netent,
+        h_errnop: *mut c_int,
+    ) -> c_int;
+    pub fn getnetbyaddr_r(
+        net: u32,
+        type_: c_int,
+        result_buf: *mut crate::netent,
+        buf: *mut c_char,
+        buflen: size_t,
+        result: *mut *mut crate::netent,
+        h_errnop: *mut c_int,
     ) -> c_int;
 
     pub fn putpwent(p: *const crate::passwd, stream: *mut crate::FILE) -> c_int;

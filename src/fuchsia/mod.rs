@@ -79,9 +79,9 @@ pub type fsfilcnt_t = c_ulonglong;
 pub type rlim_t = c_ulonglong;
 
 extern_ty! {
-    pub enum timezone {}
-    pub enum DIR {}
-    pub enum fpos64_t {} // FIXME(fuchsia): fill this out with a struct
+    pub type timezone;
+    pub type DIR;
+    pub type fpos64_t; // FIXME(fuchsia): fill this out with a struct
 }
 
 // PUB_STRUCT
@@ -1592,6 +1592,8 @@ pub const LOCK_UN: c_int = 8;
 pub const SS_ONSTACK: c_int = 1;
 pub const SS_DISABLE: c_int = 2;
 
+/// Constants may change across releases. See the [usage guidelines](crate#usage-guidelines)
+/// for details.
 pub const PATH_MAX: c_int = 4096;
 
 pub const FD_SETSIZE: c_int = 1024;
@@ -1606,7 +1608,7 @@ pub const EPOLLWRBAND: c_int = 0x200;
 pub const EPOLLMSG: c_int = 0x400;
 pub const EPOLLERR: c_int = 0x8;
 pub const EPOLLHUP: c_int = 0x10;
-pub const EPOLLET: c_int = 0x80000000;
+pub const EPOLLET: c_int = u32_cast_int(0x80000000);
 
 pub const EPOLL_CTL_ADD: c_int = 1;
 pub const EPOLL_CTL_MOD: c_int = 3;
@@ -1698,7 +1700,7 @@ pub const CLONE_NEWIPC: c_int = 0x08000000;
 pub const CLONE_NEWUSER: c_int = 0x10000000;
 pub const CLONE_NEWPID: c_int = 0x20000000;
 pub const CLONE_NEWNET: c_int = 0x40000000;
-pub const CLONE_IO: c_int = 0x80000000;
+pub const CLONE_IO: c_int = u32_cast_int(0x80000000);
 pub const CLONE_NEWCGROUP: c_int = 0x02000000;
 
 pub const WNOHANG: c_int = 0x00000001;
@@ -1734,7 +1736,7 @@ pub const PTRACE_EVENT_SECCOMP: c_int = 7;
 
 pub const __WNOTHREAD: c_int = 0x20000000;
 pub const __WALL: c_int = 0x40000000;
-pub const __WCLONE: c_int = 0x80000000;
+pub const __WCLONE: c_int = u32_cast_int(0x80000000);
 
 pub const SPLICE_F_MOVE: c_uint = 0x01;
 pub const SPLICE_F_NONBLOCK: c_uint = 0x02;
@@ -2551,7 +2553,7 @@ pub const EPROTO: c_int = 71;
 pub const EDOTDOT: c_int = 73;
 
 pub const SA_NODEFER: c_int = 0x40000000;
-pub const SA_RESETHAND: c_int = 0x80000000;
+pub const SA_RESETHAND: c_int = u32_cast_int(0x80000000);
 pub const SA_RESTART: c_int = 0x10000000;
 pub const SA_NOCLDSTOP: c_int = 0x00000001;
 
@@ -3076,9 +3078,9 @@ f! {
 
     pub fn CMSG_NXTHDR(mhdr: *const msghdr, cmsg: *const cmsghdr) -> *mut cmsghdr {
         if ((*cmsg).cmsg_len as size_t) < size_of::<cmsghdr>() {
-            core::ptr::null_mut::<cmsghdr>()
+            ptr::null_mut()
         } else if __CMSG_NEXT(cmsg).add(size_of::<cmsghdr>()) >= __MHDR_END(mhdr) {
-            core::ptr::null_mut::<cmsghdr>()
+            ptr::null_mut()
         } else {
             __CMSG_NEXT(cmsg).cast()
         }
@@ -3088,7 +3090,7 @@ f! {
         if (*mhdr).msg_controllen as size_t >= size_of::<cmsghdr>() {
             (*mhdr).msg_control.cast()
         } else {
-            core::ptr::null_mut::<cmsghdr>()
+            ptr::null_mut()
         }
     }
 
@@ -3188,8 +3190,8 @@ fn __MHDR_END(mhdr: *const msghdr) -> *mut c_uchar {
 extern "C" {}
 
 extern_ty! {
-    pub enum FILE {}
-    pub enum fpos_t {} // FIXME(fuchsia): fill this out with a struct
+    pub type FILE;
+    pub type fpos_t; // FIXME(fuchsia): fill this out with a struct
 }
 
 extern "C" {
